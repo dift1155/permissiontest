@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Référence : https://inthecheesefactory.com/blog/things-you-need-to-know-about-android-m-permission-developer-edition/en
+ */
 public class MainActivity extends AppCompatActivity {
 
     final private int REQUEST_CODE_DISPLAY_LAST_CALL = 123;
