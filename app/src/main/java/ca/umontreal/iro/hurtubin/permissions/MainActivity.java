@@ -3,20 +3,21 @@ package ca.umontreal.iro.hurtubin.permissions;
 import android.Manifest;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
-import android.content.DialogInterface;
 import android.content.OperationApplicationException;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,24 +39,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button btn = (Button) findViewById(R.id.button);
-        Button contactBtn = (Button) findViewById(R.id.contactBtn);
+        Button btn = findViewById(R.id.button);
+        Button contactBtn = findViewById(R.id.contactBtn);
 
-        text = (TextView) findViewById(R.id.text);
+        text = findViewById(R.id.text);
 
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                displayLastCallWrapper();
-            }
-        });
+        btn.setOnClickListener(v -> displayLastCallWrapper());
 
-        contactBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                insertDummyContactWrapper();
-            }
-        });
+        contactBtn.setOnClickListener(v -> insertDummyContactWrapper());
     }
 
     private void displayLastCall() {
@@ -68,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private void insertDummyContact() {
         // Two operations are needed to insert a new contact.
         ArrayList<ContentProviderOperation> operations = new
-                ArrayList<ContentProviderOperation>(2);
+                ArrayList<>(2);
 
         // First, set up a new raw contact.
         ContentProviderOperation.Builder op = ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
@@ -111,12 +102,9 @@ public class MainActivity extends AppCompatActivity {
              */
             new AlertDialog.Builder(this)
                     .setMessage("Afin d'afficher le denier appel effectué, vous devez autoriser l'application à lire le log d'appels")
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // Demande la permission voulue
-                            requestPermissions(new String[]{Manifest.permission.READ_CALL_LOG}, REQUEST_CODE_DISPLAY_LAST_CALL);
-                        }
+                    .setPositiveButton("Ok", (dialog, which) -> {
+                        // Demande la permission voulue
+                        requestPermissions(new String[]{Manifest.permission.READ_CALL_LOG}, REQUEST_CODE_DISPLAY_LAST_CALL);
                     })
                     .setNegativeButton("Annuler", null)
                     .show();
@@ -129,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_DISPLAY_LAST_CALL:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -156,9 +144,10 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // Vérifie que les permissions ont été accordées
-                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        && perms.get(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
-                        && perms.get(Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+
+                if (ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        && ActivityCompat.checkSelfPermission(this,Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+                        && ActivityCompat.checkSelfPermission(this,Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
 
                     // All Permissions Granted
                     insertDummyContact();
@@ -179,32 +168,29 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void insertDummyContactWrapper() {
-        List<String> permissionsNeeded = new ArrayList<String>();
+        List<String> permissionsNeeded = new ArrayList<>();
         final List<String> permissionsList = new ArrayList<>();
 
-        if (!addPermission(permissionsList, Manifest.permission.ACCESS_FINE_LOCATION))
+        if (addPermission(permissionsList, Manifest.permission.ACCESS_FINE_LOCATION))
             permissionsNeeded.add("GPS");
-        if (!addPermission(permissionsList, Manifest.permission.READ_CONTACTS))
+        if (addPermission(permissionsList, Manifest.permission.READ_CONTACTS))
             permissionsNeeded.add("Read Contacts");
-        if (!addPermission(permissionsList, Manifest.permission.WRITE_CONTACTS))
+        if (addPermission(permissionsList, Manifest.permission.WRITE_CONTACTS))
             permissionsNeeded.add("Write Contacts");
 
         if (permissionsList.size() > 0) {
             if (permissionsNeeded.size() > 0) {
                 // Need Rationale
-                String message = "Pour insérer un contact dans la base de données, vous devez accorder les permissions suivantes : " + permissionsNeeded.get(0);
+                StringBuilder message = new StringBuilder("Pour insérer un contact dans la base de données, vous devez accorder les permissions suivantes : " + permissionsNeeded.get(0));
 
                 for (int i = 1; i < permissionsNeeded.size(); i++)
-                    message = message + ", " + permissionsNeeded.get(i);
+                    message.append(", ").append(permissionsNeeded.get(i));
 
                 new AlertDialog.Builder(this)
-                        .setMessage(message)
-                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // Demande les permissions requises
-                                requestPermissions(permissionsList.toArray(new String[permissionsList.size()]), REQUEST_CODE_INSERT_CONTACT);
-                            }
+                        .setMessage(message.toString())
+                        .setPositiveButton("Ok", (dialog, which) -> {
+                            // Demande les permissions requises
+                            requestPermissions(permissionsList.toArray(new String[0]), REQUEST_CODE_INSERT_CONTACT);
                         })
                         .setNegativeButton("Annuler", null)
                         .show();
@@ -224,10 +210,9 @@ public class MainActivity extends AppCompatActivity {
             permissionsList.add(permission);
 
             // Check for Rationale Option
-            if (!shouldShowRequestPermissionRationale(permission))
-                return false;
+            return !shouldShowRequestPermissionRationale(permission);
         }
 
-        return true;
+        return false;
     }
 }
